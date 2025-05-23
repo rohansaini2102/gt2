@@ -51,4 +51,20 @@ AdminSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+AdminSchema.statics.createDefaultAdmin = async function() {
+  const existing = await this.findOne({ email: 'admin@admin.com' });
+  if (!existing) {
+    const admin = new this({
+      name: 'Admin',
+      email: 'admin@admin.com',
+      password: 'admin@123',
+      role: 'admin'
+    });
+    await admin.save();
+    console.log('Default admin created: admin@admin.com / admin@123');
+  } else {
+    console.log('Default admin already exists.');
+  }
+};
+
 module.exports = mongoose.model('Admin', AdminSchema);

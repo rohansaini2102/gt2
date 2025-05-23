@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { Autocomplete } from '@react-google-maps/api';
 import axios from 'axios';
 import moment from 'moment';
 import { debounce } from 'lodash';
-import socket from '../../services/socket';
+import { initializeSocket, disconnectSocket, subscribeToDriverUpdates, unsubscribeFromDriverUpdates } from '../../services/socket';
 
 // API key for Google Maps
 const GOOGLE_MAPS_API_KEY = "AIzaSyDFbjmVJoi2wDzwJNR2rrowpSEtSes1jw4";
@@ -98,6 +98,7 @@ const UserDashboard = () => {
 
   // Check if user is logged in and initialize socket
   useEffect(() => {
+    let socket;
     const token = localStorage.getItem('userToken');
     const userData = localStorage.getItem('user');
     
@@ -112,7 +113,7 @@ const UserDashboard = () => {
       
       // Initialize socket connection with user token
       console.log('[UserDashboard] Initializing socket...');
-      const socket = socket.initializeSocket(token);
+      socket = initializeSocket(token);
       
       if (socket) {
         console.log('[UserDashboard] Socket initialized successfully');
@@ -148,14 +149,14 @@ const UserDashboard = () => {
     // Cleanup on unmount
     return () => {
       console.log('[UserDashboard] Cleaning up...');
-      socket.unsubscribeFromDriverUpdates();
-      socket.disconnectSocket();
+      unsubscribeFromDriverUpdates(socket);
+      disconnectSocket(socket);
     };
   }, [navigate]);
 
   // Setup socket listeners for ride events
   useEffect(() => {
-    const socket = socket.getSocket();
+    const socket = initializeSocket(localStorage.getItem('userToken'));
     if (!socket) return;
 
     // Listen for ride acceptance
@@ -248,7 +249,7 @@ const UserDashboard = () => {
 
   // Setup real-time driver updates
   useEffect(() => {
-    const socket = socket.getSocket();
+    const socket = initializeSocket(localStorage.getItem('userToken'));
     if (!socket) return;
 
     socket.on('driverLocationUpdated', (data) => {
@@ -305,7 +306,7 @@ const UserDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('user');
-    socket.unsubscribeFromDriverUpdates();
+    unsubscribeFromDriverUpdates(initializeSocket(localStorage.getItem('userToken')));
     navigate('/user/login');
   };
 
@@ -428,10 +429,10 @@ const UserDashboard = () => {
     setRideRequestStatus('sending');
 
     // Get or initialize socket
-    let socket = socket.getSocket();
+    let socket = initializeSocket(token);
     if (!socket || !socket.connected) {
       console.log('[UserDashboard] Socket not connected, reinitializing...');
-      socket = socket.initializeSocket(token);
+      socket = initializeSocket(token);
       
       if (!socket) {
         setRideRequestStatus('error');
@@ -526,7 +527,7 @@ const UserDashboard = () => {
     };
 
     try {
-      const socket = socket.getSocket();
+      const socket = initializeSocket(localStorage.getItem('userToken'));
       if (socket) {
         socket.emit('sendMessage', message);
         setMessages(prev => [...prev, message]);
@@ -675,178 +676,172 @@ const UserDashboard = () => {
   const renderMainContent = () => {
     if (activeTab === 'home') {
       return (
-        <LoadScript 
-          googleMapsApiKey={GOOGLE_MAPS_API_KEY}
-          libraries={libraries}
-          onLoad={onLoadScript}
-        >
-          <div className="content-wrapper">
-            <div className="map-container">
-              <GoogleMap
-                mapContainerStyle={{ width: '100%', height: '400px' }}
-                center={userLocation || { lat: 26.9124, lng: 75.7873 }}
-                zoom={12}
-                onLoad={onMapLoad}
-              >
-                {userLocation && (
-                  <Marker
-                    position={userLocation}
-                    icon={{
-                      url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                    }}
-                  />
-                )}
-                {selectedBooth && (
-                  <Marker
-                    position={{ lat: selectedBooth.latitude, lng: selectedBooth.longitude }}
-                    icon={{
-                      url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
-                    }}
-                  />
-                )}
-                {dropCoordinates && (
-                  <Marker
-                    position={dropCoordinates}
-                    icon={{
-                      url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-                    }}
-                  />
-                )}
-              </GoogleMap>
-            </div>
-
-            <div className="location-info">
-              <h3>Your Current Location</h3>
-              <p>{address || 'Loading address...'}</p>
+        <div className="content-wrapper">
+          <div className="map-container">
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '400px' }}
+              center={userLocation || { lat: 26.9124, lng: 75.7873 }}
+              zoom={12}
+              onLoad={onMapLoad}
+            >
               {userLocation && (
-                <p>
-                  Latitude: {userLocation.lat.toFixed(6)}<br />
-                  Longitude: {userLocation.lng.toFixed(6)}
-                </p>
+                <Marker
+                  position={userLocation}
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                  }}
+                />
               )}
-            </div>
+              {selectedBooth && (
+                <Marker
+                  position={{ lat: selectedBooth.latitude, lng: selectedBooth.longitude }}
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                  }}
+                />
+              )}
+              {dropCoordinates && (
+                <Marker
+                  position={dropCoordinates}
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                  }}
+                />
+              )}
+            </GoogleMap>
+          </div>
 
-            {!isBookingFlow ? (
-              <button className="book-ride-btn" onClick={handleBookRide}>
-                BOOK RIDE
-              </button>
-            ) : (
-              <div className="booking-flow">
-                <h3>Select Pickup Location</h3>
-                <div className="improved-booth-options">
-                  {BOOTH_LOCATIONS.map(booth => (
-                    <div
-                      key={booth.id}
-                      className={`improved-booth-option ${selectedBooth?.id === booth.id ? 'selected' : ''}`}
-                      onClick={() => handleBoothSelect(booth)}
-                    >
-                      <div className="booth-header">
-                        <span className="booth-name">{booth.name}</span>
-                        {selectedBooth?.id === booth.id && 
-                          <span className="booth-selected-badge">Selected</span>
-                        }
-                      </div>
-                      <div className="booth-coords">
-                        <span>Lat: {booth.latitude.toFixed(5)}</span>
-                        <span>Lng: {booth.longitude.toFixed(5)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {selectedBooth && (
-                  <button className="confirm-pickup-btn" onClick={() => setIsBookingFlow('confirmed')}>
-                    Confirm Pickup Location
-                  </button>
-                )}
-                
-                {selectedBooth && isBookingFlow === 'confirmed' && (
-                  <div className="drop-location">
-                    <h3>Enter Drop Location</h3>
-                    {isLoaded && (
-                      <Autocomplete
-                        onLoad={onLoadAutocomplete}
-                        onPlaceChanged={onPlaceChanged}
-                      >
-                        <input
-                          type="text"
-                          placeholder="Enter drop location address"
-                          value={dropLocation}
-                          onChange={(e) => setDropLocation(e.target.value)}
-                          className="drop-input"
-                        />
-                      </Autocomplete>
-                    )}
-                    {dropCoordinates && (
-                      <button className="calculate-fare-btn" onClick={calculateFare}>
-                        Calculate Fare
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {showFare && fare && (
-                  <div className="fare-display">
-                    <h3>Ride Summary</h3>
-                    <div className="fare-details">
-                      <p>Distance: {distance?.toFixed(2)} km</p>
-                      <p className="fare-amount">Fare: ₹{fare}</p>
-                    </div>
-                    {!isRequestingRide ? (
-                      <button className="proceed-btn" onClick={handleProceed}>
-                        Proceed
-                      </button>
-                    ) : (
-                      <div className="request-status">
-                        {rideRequestStatus === 'sending' && (
-                          <div className="searching-loader">
-                            <div className="car-animation">
-                              <i className="fas fa-car"></i>
-                            </div>
-                            <p>Sending ride request to drivers...</p>
-                          </div>
-                        )}
-                        {rideRequestStatus === 'sent' && (
-                          <div className="searching-loader">
-                            <div className="car-animation">
-                              <i className="fas fa-car"></i>
-                            </div>
-                            <p>Looking for nearby drivers...</p>
-                            <div className="pulse-animation"></div>
-                          </div>
-                        )}
-                        {rideRequestStatus === 'error' && (
-                          <div className="error-message">
-                            <i className="fas fa-exclamation-circle"></i>
-                            <p>Failed to send ride request. Please try again.</p>
-                            <button className="retry-btn" onClick={handleProceed}>
-                              Try Again
-                            </button>
-                          </div>
-                        )}
-                        {rideRequestStatus === 'driver_found' && (
-                          <div className="driver-found-message">
-                            <i className="fas fa-check-circle"></i>
-                            <p>Driver found! Your ride is on the way.</p>
-                          </div>
-                        )}
-                        {rideRequestStatus === 'no_driver' && (
-                          <div className="error-message">
-                            <i className="fas fa-times-circle"></i>
-                            <p>No drivers available right now.</p>
-                            <button className="retry-btn" onClick={handleProceed}>
-                              Try Again
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+          <div className="location-info">
+            <h3>Your Current Location</h3>
+            <p>{address || 'Loading address...'}</p>
+            {userLocation && (
+              <p>
+                Latitude: {userLocation.lat.toFixed(6)}<br />
+                Longitude: {userLocation.lng.toFixed(6)}
+              </p>
             )}
           </div>
-        </LoadScript>
+
+          {!isBookingFlow ? (
+            <button className="book-ride-btn" onClick={handleBookRide}>
+              BOOK RIDE
+            </button>
+          ) : (
+            <div className="booking-flow">
+              <h3>Select Pickup Location</h3>
+              <div className="improved-booth-options">
+                {BOOTH_LOCATIONS.map(booth => (
+                  <div
+                    key={booth.id}
+                    className={`improved-booth-option ${selectedBooth?.id === booth.id ? 'selected' : ''}`}
+                    onClick={() => handleBoothSelect(booth)}
+                  >
+                    <div className="booth-header">
+                      <span className="booth-name">{booth.name}</span>
+                      {selectedBooth?.id === booth.id && 
+                        <span className="booth-selected-badge">Selected</span>
+                      }
+                    </div>
+                    <div className="booth-coords">
+                      <span>Lat: {booth.latitude.toFixed(5)}</span>
+                      <span>Lng: {booth.longitude.toFixed(5)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedBooth && (
+                <button className="confirm-pickup-btn" onClick={() => setIsBookingFlow('confirmed')}>
+                  Confirm Pickup Location
+                </button>
+              )}
+              
+              {selectedBooth && isBookingFlow === 'confirmed' && (
+                <div className="drop-location">
+                  <h3>Enter Drop Location</h3>
+                  {isLoaded && (
+                    <Autocomplete
+                      onLoad={onLoadAutocomplete}
+                      onPlaceChanged={onPlaceChanged}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Enter drop location address"
+                        value={dropLocation}
+                        onChange={(e) => setDropLocation(e.target.value)}
+                        className="drop-input"
+                      />
+                    </Autocomplete>
+                  )}
+                  {dropCoordinates && (
+                    <button className="calculate-fare-btn" onClick={calculateFare}>
+                      Calculate Fare
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {showFare && fare && (
+                <div className="fare-display">
+                  <h3>Ride Summary</h3>
+                  <div className="fare-details">
+                    <p>Distance: {distance?.toFixed(2)} km</p>
+                    <p className="fare-amount">Fare: ₹{fare}</p>
+                  </div>
+                  {!isRequestingRide ? (
+                    <button className="proceed-btn" onClick={handleProceed}>
+                      Proceed
+                    </button>
+                  ) : (
+                    <div className="request-status">
+                      {rideRequestStatus === 'sending' && (
+                        <div className="searching-loader">
+                          <div className="car-animation">
+                            <i className="fas fa-car"></i>
+                          </div>
+                          <p>Sending ride request to drivers...</p>
+                        </div>
+                      )}
+                      {rideRequestStatus === 'sent' && (
+                        <div className="searching-loader">
+                          <div className="car-animation">
+                            <i className="fas fa-car"></i>
+                          </div>
+                          <p>Looking for nearby drivers...</p>
+                          <div className="pulse-animation"></div>
+                        </div>
+                      )}
+                      {rideRequestStatus === 'error' && (
+                        <div className="error-message">
+                          <i className="fas fa-exclamation-circle"></i>
+                          <p>Failed to send ride request. Please try again.</p>
+                          <button className="retry-btn" onClick={handleProceed}>
+                            Try Again
+                          </button>
+                        </div>
+                      )}
+                      {rideRequestStatus === 'driver_found' && (
+                        <div className="driver-found-message">
+                          <i className="fas fa-check-circle"></i>
+                          <p>Driver found! Your ride is on the way.</p>
+                        </div>
+                      )}
+                      {rideRequestStatus === 'no_driver' && (
+                        <div className="error-message">
+                          <i className="fas fa-times-circle"></i>
+                          <p>No drivers available right now.</p>
+                          <button className="retry-btn" onClick={handleProceed}>
+                            Try Again
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       );
     } else if (activeTab === 'profile') {
       return (
@@ -1033,53 +1028,48 @@ const UserDashboard = () => {
             </div>
           </div>
           
-          <LoadScript 
-            googleMapsApiKey={GOOGLE_MAPS_API_KEY} 
-            libraries={[...libraries, 'geometry']}
-          >
-            <div className="map-container">
-              <GoogleMap
-                mapContainerStyle={{ width: '100%', height: '400px' }}
-                center={driverLocation}
-                zoom={13}
-                onLoad={onMapLoad}
-                options={{
-                  trafficLayer: isTrafficEnabled
-                }}
-              >
-                {isLocationAvailable ? (
-                  <>
-                    <Marker 
-                      position={driverLocation} 
-                      icon={{
-                        url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                        scaledSize: new window.google.maps.Size(40, 40),
-                        rotation: driverBearing || 0
-                      }}
-                    />
-                    <Marker 
-                      position={{ lat: selectedBooth.latitude, lng: selectedBooth.longitude }}
-                      icon={{
-                        url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-                        scaledSize: new window.google.maps.Size(40, 40)
-                      }}
-                    />
-                    {directions && (
-                      <DirectionsRenderer directions={directions} />
-                    )}
-                  </>
-                ) : (
-                  <div className="map-error-overlay">
-                    <i className="fas fa-exclamation-triangle"></i>
-                    <p>Driver location unavailable</p>
-                    <button onClick={() => window.location.reload()}>
-                      Refresh
-                    </button>
-                  </div>
-                )}
-              </GoogleMap>
-            </div>
-          </LoadScript>
+          <div className="map-container">
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '400px' }}
+              center={driverLocation}
+              zoom={13}
+              onLoad={onMapLoad}
+              options={{
+                trafficLayer: isTrafficEnabled
+              }}
+            >
+              {isLocationAvailable ? (
+                <>
+                  <Marker 
+                    position={driverLocation} 
+                    icon={{
+                      url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                      scaledSize: new window.google.maps.Size(40, 40),
+                      rotation: driverBearing || 0
+                    }}
+                  />
+                  <Marker 
+                    position={{ lat: selectedBooth.latitude, lng: selectedBooth.longitude }}
+                    icon={{
+                      url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                      scaledSize: new window.google.maps.Size(40, 40)
+                    }}
+                  />
+                  {directions && (
+                    <DirectionsRenderer directions={directions} />
+                  )}
+                </>
+              ) : (
+                <div className="map-error-overlay">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <p>Driver location unavailable</p>
+                  <button onClick={() => window.location.reload()}>
+                    Refresh
+                  </button>
+                </div>
+              )}
+            </GoogleMap>
+          </div>
           
           {showContactDriver && (
             <div className="contact-driver-modal">

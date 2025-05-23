@@ -1,30 +1,26 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import Header from '../components/common/Landing/Header';
+import Hero from '../components/common/Landing/Hero';
+import AboutPods from '../components/common/Landing/AboutPods';
+import HowItWorks from '../components/common/Landing/HowItWorks';
+import Features from '../components/common/Landing/Features';
+import MissionVision from '../components/common/Landing/MissionVision';
+import DownloadApp from '../components/common/Landing/DownloadApp';
+import Footer from '../components/common/Landing/Footer';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold mb-8 text-blue-700">Welcome to GANTAVYAM</h1>
-      <div className="flex gap-8 mb-8">
-        <button
-          className="px-8 py-4 text-lg font-semibold rounded bg-blue-600 text-white hover:bg-blue-800 transition"
-          onClick={() => navigate('/driver/login')}
-        >
-          I am a Driver
-        </button>
-        <button
-          className="px-8 py-4 text-lg font-semibold rounded bg-green-600 text-white hover:bg-green-800 transition"
-          onClick={() => navigate('/user/login')}
-        >
-          I am a User
-        </button>
-      </div>
-      <div className="mt-4 text-gray-500">
-        <small>
-          <a href="/admin" className="hover:underline hover:text-blue-700">Admin Login</a>
-        </small>
-      </div>
+    <div className="landing-bg min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <Hero />
+        <AboutPods />
+        <HowItWorks />
+        <Features />
+        <MissionVision />
+        <DownloadApp />
+      </main>
+      <Footer />
     </div>
   );
 };

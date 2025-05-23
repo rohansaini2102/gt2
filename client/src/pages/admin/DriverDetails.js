@@ -1,6 +1,6 @@
 // client/src/pages/admin/DriverDetails.js
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getDriverById } from '../../services/api';
 
 const DriverDetails = () => {
@@ -8,6 +8,14 @@ const DriverDetails = () => {
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const fetchDriver = async () => {

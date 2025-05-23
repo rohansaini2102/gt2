@@ -1,232 +1,129 @@
 // client/src/pages/DriverLogin.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { FaCar, FaGoogle, FaApple } from 'react-icons/fa';
 
 const DriverLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    mobileNo: '',
-    password: ''
-  });
+  const [input, setInput] = useState('');
+  const [password, setPassword] = useState('');
+  const [step, setStep] = useState(1); // 1: phone/email, 2: password
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordData, setForgotPasswordData] = useState({
-    mobileNo: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [resetMessage, setResetMessage] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleContinue = (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!input) {
+      setError('Please enter your phone number or email.');
+      return;
+    }
+    setStep(2);
   };
 
-  const handleForgotPasswordChange = (e) => {
-    setForgotPasswordData({ ...forgotPasswordData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    if (!formData.mobileNo || !formData.password) {
-      setError('Please enter both mobile number and password.');
+    setTimeout(() => {
       setLoading(false);
-      return;
-    }
-    try {
-      const res = await axios.post('http://localhost:5000/api/drivers/login', formData);
-      if (res.data.token) {
-        localStorage.setItem('driverToken', res.data.token);
-        if (res.data.driver) {
-          localStorage.setItem('driver', JSON.stringify(res.data.driver));
-        } else if (res.data.data) {
-          localStorage.setItem('driver', JSON.stringify(res.data.data));
-        }
-        setLoading(false);
+      if (!password) {
+        setError('Please enter your password.');
+      } else {
         navigate('/driver/dashboard');
-      } else {
-        throw new Error('No token received from server');
       }
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-      } else if (err.message === 'Network Error') {
-        setError('Network error: Please check your connection or server.');
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
-      setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setResetMessage('');
-    if (!forgotPasswordData.mobileNo || !forgotPasswordData.newPassword || !forgotPasswordData.confirmPassword) {
-      setResetMessage('Please fill all fields.');
-      setLoading(false);
-      return;
-    }
-    if (forgotPasswordData.newPassword !== forgotPasswordData.confirmPassword) {
-      setResetMessage('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-    try {
-      const response = await axios.post('http://localhost:5000/api/drivers/reset-password', {
-        mobileNo: forgotPasswordData.mobileNo,
-        newPassword: forgotPasswordData.newPassword
-      });
-      setResetMessage('Password reset successful! Please login with your new password.');
-      setShowForgotPassword(false);
-      setForgotPasswordData({ mobileNo: '', newPassword: '', confirmPassword: '' });
-      setFormData({ ...formData, mobileNo: forgotPasswordData.mobileNo });
-    } catch (err) {
-      setResetMessage(
-        err.response?.data?.error || 
-        'Failed to reset password. Please check your mobile number.'
-      );
-    } finally {
-      setLoading(false);
-    }
+    }, 800);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 py-8">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8 mb-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-700 mb-2">GANTAVYAM</h1>
-          <h2 className="text-xl font-semibold text-orange-500">Driver Login</h2>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Navbar */}
+      <nav className="w-full bg-black py-4 px-6 flex items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-sky-400 rounded-full flex items-center justify-center font-bold text-black text-xl">G</div>
+          <span className="text-sky-400 text-2xl font-bold tracking-wide ml-2">GANTAVYAM</span>
         </div>
-        {error && <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 border-l-4 border-red-500 text-sm">{error}</div>}
-        {resetMessage && (
-          <div className={`px-4 py-2 rounded mb-4 border-l-4 text-sm ${resetMessage.includes('successful') ? 'bg-green-100 text-green-700 border-green-500' : 'bg-red-100 text-red-700 border-red-500'}`}>{resetMessage}</div>
-        )}
-        {!showForgotPassword ? (
-          <>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="mobileNo" className="block text-gray-700 font-medium mb-1">Mobile Number</label>
-                <input
-                  type="text"
-                  id="mobileNo"
-                  name="mobileNo"
-                  value={formData.mobileNo}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your registered mobile number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-gray-700 font-medium mb-1">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <button
-                type="button"
-                className="text-blue-600 hover:underline text-sm mb-2"
-                onClick={() => setShowForgotPassword(true)}
-              >
-                Forgot Password?
-              </button>
+      </nav>
+      {/* Centered Login Card */}
+      <div className="flex-1 flex items-center justify-center py-8 px-2">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-4">
+            <FaCar className="text-sky-400 text-2xl" />
+            <h2 className="text-2xl font-bold text-gray-900">Driver Login</h2>
+          </div>
+          {step === 1 && (
+            <form onSubmit={handleContinue} className="w-full flex flex-col gap-4">
+              <label htmlFor="driver-login-input" className="text-gray-700 font-medium">What's your phone number or email?</label>
+              <input
+                id="driver-login-input"
+                type="text"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Enter phone number or email"
+                className="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg"
+                autoComplete="username"
+                aria-label="Phone number or email"
+              />
+              {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-800 transition disabled:bg-gray-400 flex items-center justify-center"
+                className="w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-sky-400 hover:text-black transition text-lg mt-2"
                 disabled={loading}
               >
-                {loading ? (
-                  <span className="loader border-2 border-t-2 border-t-white border-blue-200 rounded-full w-5 h-5 animate-spin mr-2"></span>
-                ) : (
-                  'Login'
-                )}
+                Continue
               </button>
             </form>
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">New driver?</p>
-              <Link to="/driver/signup" className="text-blue-600 font-semibold hover:underline">Create Account</Link>
-            </div>
-          </>
-        ) : (
-          <div className="animate-fadeIn">
-            <h3 className="text-lg font-semibold text-blue-700 mb-4">Reset Password</h3>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label htmlFor="reset-mobile" className="block text-gray-700 font-medium mb-1">Mobile Number</label>
-                <input
-                  type="text"
-                  id="reset-mobile"
-                  name="mobileNo"
-                  value={forgotPasswordData.mobileNo}
-                  onChange={handleForgotPasswordChange}
-                  required
-                  placeholder="Enter your registered mobile number"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="newPassword" className="block text-gray-700 font-medium mb-1">New Password</label>
-                <input
-                  type="password"
-                  id="newPassword"
-                  name="newPassword"
-                  value={forgotPasswordData.newPassword}
-                  onChange={handleForgotPasswordChange}
-                  required
-                  placeholder="Create a new password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label htmlFor="confirmPassword" className="block text-gray-700 font-medium mb-1">Confirm New Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={forgotPasswordData.confirmPassword}
-                  onChange={handleForgotPasswordChange}
-                  required
-                  placeholder="Confirm your new password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div className="flex justify-between gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowForgotPassword(false)}
-                  className="px-4 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50"
-                >
-                  Back to Login
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-800 transition disabled:bg-gray-400"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <span className="loader border-2 border-t-2 border-t-white border-blue-200 rounded-full w-5 h-5 animate-spin mr-2"></span>
-                  ) : (
-                    'Reset Password'
-                  )}
-                </button>
-              </div>
+          )}
+          {step === 2 && (
+            <form onSubmit={handleLogin} className="w-full flex flex-col gap-4 animate-fadeIn">
+              <label htmlFor="driver-password-input" className="text-gray-700 font-medium">Enter your password</label>
+              <input
+                id="driver-password-input"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-4 py-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg"
+                autoComplete="current-password"
+                aria-label="Password"
+              />
+              {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
+              <button
+                type="submit"
+                className="w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-sky-400 hover:text-black transition text-lg mt-2"
+                disabled={loading}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+              <button
+                type="button"
+                className="text-sky-400 hover:underline text-sm mt-2"
+                onClick={() => setStep(1)}
+              >
+                Back
+              </button>
             </form>
+          )}
+          <div className="flex items-center w-full my-6">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="mx-3 text-gray-400">or</span>
+            <div className="flex-1 h-px bg-gray-200" />
           </div>
-        )}
+          <button className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 rounded-lg mb-2 transition">
+            <FaGoogle className="text-lg" /> Continue with Google
+          </button>
+          <button className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 rounded-lg mb-2 transition">
+            <FaApple className="text-lg" /> Continue with Apple
+          </button>
+          <div className="text-xs text-gray-400 text-center mt-4">
+            By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages, including by automated means, from Gantavyam and its affiliates to the number provided.
+          </div>
+          <div className="mt-6 text-center w-full">
+            <span className="text-gray-600">New driver? </span>
+            <Link to="/driver/signup" className="text-sky-400 font-semibold hover:underline">Create Account</Link>
+          </div>
+        </div>
       </div>
-      <div className="text-center text-gray-500 text-xs mt-2">&copy; 2025 GANTAVYAM. All rights reserved.</div>
     </div>
   );
 };

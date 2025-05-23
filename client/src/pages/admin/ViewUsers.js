@@ -7,8 +7,20 @@ const ViewUsers = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const fetchUsers = async () => {
-      const res = await axios.get('http://localhost:5000/api/admin/users');
+      const token = localStorage.getItem('adminToken');
+      const res = await axios.get('http://localhost:5000/api/admin/users', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setUsers(res.data.data);
     };
     fetchUsers();

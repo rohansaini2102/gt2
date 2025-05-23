@@ -1,14 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const ViewUserDetails = () => {
   const { id } = useParams();
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const fetchDetails = async () => {
-      const res = await axios.get(`http://localhost:5000/api/admin/users/${id}`);
+      const token = localStorage.getItem('adminToken');
+      const res = await axios.get(`http://localhost:5000/api/admin/users/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setUser(res.data.data);
     };
     fetchDetails();

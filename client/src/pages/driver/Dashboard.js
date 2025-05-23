@@ -1,11 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
-import socket from '../../services/socket';
+import { GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import { initializeSocket, disconnectSocket, subscribeToDriverUpdates, unsubscribeFromDriverUpdates } from '../../services/socket';
 import axios from 'axios';
+import { FiMenu, FiUser, FiMap, FiLogOut, FiCheckCircle, FiXCircle, FiBell, FiToggleLeft, FiToggleRight, FiMapPin, FiPhone, FiTruck, FiBarChart2, FiDollarSign, FiSettings, FiStar, FiList, FiHome } from 'react-icons/fi';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDFbjmVJoi2wDzwJNR2rrowpSEtSes1jw4';
 const libraries = ['places'];
+
+const navLinks = [
+  { label: 'Dashboard', icon: <FiHome />, key: 'dashboard' },
+  { label: 'Rides', icon: <FiList />, key: 'rides' },
+  { label: 'Earnings', icon: <FiDollarSign />, key: 'earnings' },
+  { label: 'Analytics', icon: <FiBarChart2 />, key: 'analytics' },
+  { label: 'Ratings', icon: <FiStar />, key: 'ratings' },
+  { label: 'Notifications', icon: <FiBell />, key: 'notifications' },
+  { label: 'Settings', icon: <FiSettings />, key: 'settings' },
+];
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -20,6 +31,10 @@ const DriverDashboard = () => {
   const [notificationToast, setNotificationToast] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const watchId = useRef(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const mapRef = useRef(null);
 
   // Notification Toast component
   const NotificationToast = ({ type, message }) => {
@@ -62,7 +77,7 @@ const DriverDashboard = () => {
     // Initialize socket only once
     if (!socket) {
       console.log('[DriverDashboard] Initializing socket connection...');
-      const socketInstance = socket.initializeSocket(token);
+      const socketInstance = initializeSocket(token);
       if (socketInstance) {
         setSocket(socketInstance);
         // Setup event listeners (only once)
@@ -393,7 +408,7 @@ const DriverDashboard = () => {
     localStorage.removeItem('driverToken');
     
     // Disconnect socket
-    socket.disconnectSocket();
+    disconnectSocket();
     
     // Navigate to login
     navigate('/driver/login');
@@ -414,6 +429,9 @@ const DriverDashboard = () => {
     setRideRequests((prev) => prev.filter(r => r._id !== rideId));
   };
 
+  // Responsive: show sidebar on desktop, bottom sheet on mobile
+  const isMobile = window.innerWidth < 768;
+
   // If loading
   if (!driver) {
     return (
@@ -425,147 +443,121 @@ const DriverDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {notificationToast && <NotificationToast {...notificationToast} />}
-      
-      <div className="driver-header">
-        <h2>Driver Dashboard</h2>
-        <div className="header-actions">
-          <span className={`connection-status ${connectionStatus}`}>
-            {connectionStatus === 'connected' ? '🟢' : connectionStatus === 'error' ? '🔴' : '🟡'}
-          </span>
-          <button onClick={goToProfile}>Profile</button>
-          <button onClick={handleLogout}>Logout</button>
-          <button 
-            onClick={handleStatusToggle} 
-            className={`status-toggle ${isOnline ? 'online' : 'offline'}`}
-          >
-            {isOnline ? 'Go Offline' : 'Go Online'}
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Sidebar */}
+      <aside className={`fixed top-0 left-0 h-full z-30 flex flex-col transition-transform duration-300 ${isMobile ? (showSidebar ? 'translate-x-0' : '-translate-x-full') : ''} w-16 md:w-20 bg-black shadow-lg`}>
+        {/* Logo */}
+        <div className="flex items-center justify-center py-4 border-b border-gray-800">
+          <div className="w-10 h-10 bg-sky-400 rounded-full flex items-center justify-center font-bold text-black text-2xl">G</div>
+        </div>
+        {/* Nav Icons */}
+        <nav className="flex-1 flex flex-col items-center gap-6 py-8">
+          {navLinks.map(link => (
+            <button key={link.key} className="flex flex-col items-center text-sky-400 hover:text-sky-300 transition" title={link.label}>
+              <span className="text-2xl">{link.icon}</span>
+            </button>
+          ))}
+          <button className="flex flex-col items-center text-red-400 hover:text-red-200 transition mt-4" onClick={handleLogout} title="Logout">
+            <FiLogOut className="text-2xl" />
           </button>
-        </div>
-      </div>
-      
-      {showProfile && driver && (
-        <div className="driver-profile-modal">
-          <div className="modal-content">
-            <h3>My Profile</h3>
-            <p><strong>Name:</strong> {driver.fullName || driver.name}</p>
-            <p><strong>Phone:</strong> {driver.mobileNo || driver.phone}</p>
-            <p><strong>Email:</strong> {driver.email || 'N/A'}</p>
-            <p><strong>Status:</strong> {isOnline ? 'Online' : 'Offline'}</p>
-            <button onClick={closeProfile}>Close</button>
-          </div>
-        </div>
+        </nav>
+      </aside>
+      {/* Hamburger for mobile */}
+      {isMobile && !showSidebar && (
+        <button onClick={() => setShowSidebar(true)} className="fixed top-4 left-4 z-40 text-3xl text-sky-400 bg-black rounded-full shadow p-2 border border-sky-400"><FiMenu /></button>
       )}
-      
-      <div className="driver-map-section">
-        <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={libraries}>
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '350px' }}
-            center={userLocation || { lat: 26.9124, lng: 75.7873 }}
-            zoom={13}
-          >
-            {userLocation && <Marker position={userLocation} label="You" />}
-            {activeRide && (
-              <Marker 
-                position={{ 
-                  lat: activeRide.pickupLocation.latitude, 
-                  lng: activeRide.pickupLocation.longitude 
-                }} 
-                label="Pickup" 
-              />
-            )}
-            {directions && <DirectionsRenderer directions={directions} />}
-          </GoogleMap>
-        </LoadScript>
-      </div>
-      
-      <div className="connection-info">
-        {connectionStatus === 'disconnected' && (
-          <div className="alert alert-warning">
-            ⚠️ Connecting to server...
+      {/* Overlay for mobile sidebar */}
+      {isMobile && showSidebar && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-20" onClick={() => setShowSidebar(false)}></div>
+      )}
+      {/* Main Content */}
+      <main className={`flex-1 flex flex-col min-h-screen ${isMobile ? '' : 'md:ml-20'} transition-all duration-300`}> 
+        {/* Header */}
+        <header className="w-full flex items-center justify-between px-4 md:px-8 py-4 bg-black shadow-sm sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-sky-400 rounded-full flex items-center justify-center font-bold text-black text-2xl md:hidden">G</div>
+            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           </div>
-        )}
-        {connectionStatus === 'error' && (
-          <div className="alert alert-error">
-            ❌ Connection error. Please refresh the page.
+          <div className="flex items-center gap-4">
+            <button
+              className={`flex items-center gap-2 px-4 py-1 rounded-full font-semibold text-sm ${isOnline ? 'bg-sky-400 text-black' : 'bg-gray-800 text-gray-300 border border-sky-400'}`}
+              onClick={handleStatusToggle}
+            >
+              {isOnline ? <FiToggleRight className="text-xl" /> : <FiToggleLeft className="text-xl" />}
+              {isOnline ? 'Online' : 'Offline'}
+            </button>
+            <button className="relative text-2xl text-sky-400">
+              <FiBell />
+              {notification && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
+            </button>
+            <button onClick={() => setShowProfile(true)} className="w-9 h-9 rounded-full bg-sky-100 flex items-center justify-center text-xl text-sky-500 border-2 border-sky-400">
+              <FiUser />
+            </button>
           </div>
-        )}
-        {connectionStatus === 'connected' && !isOnline && (
-          <div className="alert alert-info">
-            💡 You are offline. Go online to receive ride requests.
+        </header>
+        {/* Main Map Area */}
+        <div className="flex-1 flex flex-col items-center justify-center w-full p-2 md:p-8">
+          <div className="w-full max-w-5xl h-[60vh] rounded-2xl overflow-hidden shadow-lg bg-white">
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={userLocation || { lat: 26.9124, lng: 75.7873 }}
+              zoom={13}
+              onLoad={map => (mapRef.current = map)}
+            >
+              {userLocation && <Marker position={userLocation} label="You" />}
+              {activeRide && (
+                <Marker position={activeRide.pickupLocation} label="Pickup" />
+              )}
+              {directions && <DirectionsRenderer directions={directions} />}
+            </GoogleMap>
           </div>
-        )}
-      </div>
-      
-      {activeRide ? (
-        <div className="active-ride-section">
-          <h3>Active Ride</h3>
-          <div className="ride-info">
-            <p><strong>User:</strong> {activeRide.userName}</p>
-            <p><strong>Phone:</strong> {activeRide.userPhone}</p>
-            <p><strong>Pickup:</strong> {activeRide.pickupLocation.boothName}</p>
-            <p><strong>Drop:</strong> {activeRide.dropLocation.address}</p>
-            <p><strong>Fare:</strong> ₹{activeRide.fare}</p>
-            <p><strong>Distance:</strong> {activeRide.distance} km</p>
-            {userLocation && (
-              <p><strong>Distance to Pickup:</strong> {getDistanceToPickup(activeRide.pickupLocation)} km</p>
-            )}
-          </div>
-          <div className="ride-actions">
-            <button className="complete-btn">Mark as Picked Up</button>
-            <button className="complete-btn">Complete Ride</button>
-          </div>
-        </div>
-      ) : (
-        <div className="ride-requests-section">
-          <h3>Incoming Ride Requests</h3>
-          {!isOnline ? (
-            <div className="no-requests">
-              <p>Go online to start receiving ride requests</p>
+          {/* Floating Card for Ride Requests/Active Ride (only if present) */}
+          {rideRequests.length > 0 && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4 z-10">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><FiTruck className="text-sky-400" /> Ride Request</h2>
+              <div className="flex flex-col gap-4">
+                {rideRequests.map((ride) => (
+                  <div key={ride._id} className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2 shadow">
+                    <div className="flex items-center gap-2 text-lg font-semibold text-sky-600"><FiMapPin /> {ride.pickupLocation?.boothName || 'Pickup'}</div>
+                    <div className="text-gray-700">Drop: {ride.dropLocation?.address}</div>
+                    <div className="flex items-center gap-4 mt-2">
+                      <button className="flex-1 bg-sky-400 text-black font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-black hover:text-white transition"><FiCheckCircle /> Accept</button>
+                      <button className="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-red-100 transition"><FiXCircle /> Decline</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : rideRequests.length === 0 ? (
-            <div className="no-requests">
-              <p>Waiting for ride requests...</p>
-              <div className="pulse-animation"></div>
-            </div>
-          ) : (
-            <div className="ride-requests-list">
-              {rideRequests.map((ride) => (
-                <div key={ride._id} className="ride-request-card">
-                  <div className="ride-request-header">
-                    <h4>{ride.userName}</h4>
-                    <span className="fare">₹{ride.fare}</span>
-                  </div>
-                  <div className="ride-request-details">
-                    <p><strong>Phone:</strong> {ride.userPhone}</p>
-                    <p><strong>Pickup:</strong> {ride.pickupLocation.boothName}</p>
-                    <p><strong>Drop:</strong> {ride.dropLocation.address}</p>
-                    <p><strong>Distance:</strong> {ride.distance} km</p>
-                    {userLocation && (
-                      <p><strong>Distance to Pickup:</strong> {getDistanceToPickup(ride.pickupLocation)} km</p>
-                    )}
-                  </div>
-                  <div className="ride-request-actions">
-                    <button 
-                      onClick={() => acceptRide(ride)} 
-                      className="accept-btn"
-                    >
-                      Accept
-                    </button>
-                    <button 
-                      onClick={() => declineRide(ride._id)} 
-                      className="decline-btn"
-                    >
-                      Decline
-                    </button>
-                  </div>
+          )}
+          {/* Floating Card for Active Ride (only if present) */}
+          {activeRide && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-4 z-10">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><FiTruck className="text-sky-400" /> Active Ride</h2>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-lg font-semibold text-sky-600"><FiMapPin /> {activeRide.pickupLocation?.boothName || 'Pickup'}</div>
+                <div className="text-gray-700">Drop: {activeRide.dropLocation?.address}</div>
+                <div className="text-gray-700">Rider: {activeRide.userName} <span className="ml-2 text-gray-400">({activeRide.userPhone})</span></div>
+                <div className="flex items-center gap-4 mt-2">
+                  <button className="flex-1 bg-sky-400 text-black font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-black hover:text-white transition"><FiPhone /> Call</button>
+                  <button className="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-red-100 transition"><FiXCircle /> Cancel</button>
                 </div>
-              ))}
+              </div>
             </div>
           )}
         </div>
-      )}
+        {/* Stats as bottom sheet/modal on mobile (hidden by default, can be toggled with a button if needed) */}
+        {/* Profile Modal */}
+        {showProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl w-full max-w-sm flex flex-col items-center">
+              <div className="w-20 h-20 rounded-full bg-sky-100 flex items-center justify-center text-4xl text-sky-500 mb-2"><FiUser /></div>
+              <div className="font-bold text-xl mb-1">{driver?.fullName || driver?.name || 'Driver'}</div>
+              <div className="text-gray-500 mb-2">{driver?.mobileNo || driver?.phone}</div>
+              <button onClick={() => setShowProfile(false)} className="mt-4 px-6 py-2 bg-sky-400 text-black rounded-lg font-semibold hover:bg-black hover:text-white transition">Close</button>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 };

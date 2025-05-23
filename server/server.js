@@ -8,9 +8,18 @@ const fs = require('fs');
 const { printDriverStats } = require('./controllers/driverController');
 const http = require('http');
 const { initializeSocket } = require('./socket');
+const Admin = require('./models/Admin');
 
-// Load env vars
-dotenv.config();
+console.log('Current working directory:', process.cwd());
+console.log('server.js directory:', __dirname);
+console.log('Does .env exist?', fs.existsSync(path.join(__dirname, '.env')));
+if (fs.existsSync(path.join(__dirname, '.env'))) {
+  console.log('Contents of .env:', fs.readFileSync(path.join(__dirname, '.env'), 'utf8'));
+} else {
+  console.log('.env file not found in server directory.');
+}
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+console.log('Loaded MONGO_URL:', process.env.MONGO_URL); // Debug print
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -37,10 +46,12 @@ app.use('/uploads', (req, res, next) => {
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URL)
-.then(() => {
+.then(async () => {
   console.log('MongoDB Connected');
   // Print database statistics on startup
   printDriverStats();
+  // Ensure default admin exists
+  await Admin.createDefaultAdmin();
   
   // Setup periodic database monitoring
   setInterval(async () => {

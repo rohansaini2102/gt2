@@ -24,7 +24,7 @@ const fileClient = axios.create({
 
 // Add authentication token to requests
 const addAuthToken = (config) => {
-  const token = localStorage.getItem('userToken') || localStorage.getItem('driverToken');
+  const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken') || localStorage.getItem('driverToken');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }

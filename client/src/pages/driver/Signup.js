@@ -2,6 +2,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { driverSignup } from '../../services/api';
+import ModernUpload from '../../components/common/ModernUpload';
+import { FiUser, FiCreditCard, FiClipboard, FiLock } from 'react-icons/fi';
+
+const steps = [
+  { key: 'personal', label: 'Personal Info', icon: <FiUser /> },
+  { key: 'bank', label: 'Bank Details', icon: <FiCreditCard /> },
+  { key: 'license', label: 'Licenses', icon: <FiClipboard /> },
+  { key: 'security', label: 'Security', icon: <FiLock /> },
+];
 
 const DriverSignup = () => {
   const navigate = useNavigate();
@@ -100,131 +109,154 @@ const DriverSignup = () => {
             <Link to="/driver/login" className="hover:underline">Already registered? Login</Link>
           </p>
         </div>
-        {error && <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 border-l-4 border-red-500 text-sm">{error}</div>}
-        <div className="flex justify-between mb-8">
-          <div className={`flex-1 text-center py-2 rounded-l-lg ${activeSection === 'personal' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} cursor-pointer`} onClick={() => changeSection('personal')}>Personal Info</div>
-          <div className={`flex-1 text-center py-2 ${activeSection === 'bank' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} cursor-pointer`} onClick={() => changeSection('bank')}>Bank Details</div>
-          <div className={`flex-1 text-center py-2 ${activeSection === 'license' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} cursor-pointer`} onClick={() => changeSection('license')}>Licenses</div>
-          <div className={`flex-1 text-center py-2 rounded-r-lg ${activeSection === 'security' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} cursor-pointer`} onClick={() => changeSection('security')}>Security</div>
+        {/* Stepper */}
+        <div className="flex justify-between items-center mb-8">
+          {steps.map((step, idx) => (
+            <div key={step.key} className="flex-1 flex flex-col items-center">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full text-2xl mb-1 border-2 ${activeSection === step.key ? 'bg-sky-400 text-white border-sky-400' : 'bg-gray-200 text-gray-400 border-gray-300'}`}>{step.icon}</div>
+              <span className={`text-xs font-semibold ${activeSection === step.key ? 'text-sky-600' : 'text-gray-400'}`}>{step.label}</span>
+              {idx < steps.length - 1 && <div className="w-full h-1 bg-gray-200 mt-2" />}
+            </div>
+          ))}
         </div>
+        {error && <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 border-l-4 border-red-500 text-sm">{error}</div>}
         <form onSubmit={handleSubmit} className="mt-4">
           {/* Personal Information Section */}
           <div className={activeSection === 'personal' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Full Name</label>
-                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="Enter your full name" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="Enter your full name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Mobile Number</label>
-                <input type="text" name="mobileNo" value={formData.mobileNo} onChange={handleChange} required placeholder="Enter your mobile number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="mobileNo" value={formData.mobileNo} onChange={handleChange} required placeholder="Enter your mobile number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Aadhaar Number</label>
-                <input type="text" name="aadhaarNo" value={formData.aadhaarNo} onChange={handleChange} required placeholder="Enter your 12-digit Aadhaar number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="aadhaarNo" value={formData.aadhaarNo} onChange={handleChange} required placeholder="Enter your 12-digit Aadhaar number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Aadhaar Photo</label>
-                <input type="file" name="aadhaarPhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Aadhaar Photo"
+                name="aadhaarPhoto"
+                file={files.aadhaarPhoto}
+                onChange={handleFileChange}
+                required
+              />
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Vehicle Number</label>
-                <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} required placeholder="Enter your vehicle number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} required placeholder="Enter your vehicle number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Registration Certificate Photo</label>
-                <input type="file" name="registrationCertificatePhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Registration Certificate Photo"
+                name="registrationCertificatePhoto"
+                file={files.registrationCertificatePhoto}
+                onChange={handleFileChange}
+                required
+              />
             </div>
-            <div className="flex justify-end mt-4">
-              <button type="button" onClick={() => changeSection('bank')} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-800 transition">Next</button>
+            <div className="flex justify-center gap-4 mt-6">
+              <button type="button" onClick={() => changeSection('bank')} className="px-8 py-3 bg-sky-400 text-black rounded-lg hover:bg-black hover:text-white font-semibold text-lg transition">Next</button>
             </div>
           </div>
           {/* Bank Details Section */}
           <div className={activeSection === 'bank' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">Bank Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Bank Name</label>
-                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required placeholder="Enter your bank name" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required placeholder="Enter your bank name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">IFSC Code</label>
-                <input type="text" name="ifscCode" value={formData.ifscCode} onChange={handleChange} required placeholder="Enter IFSC code" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="ifscCode" value={formData.ifscCode} onChange={handleChange} required placeholder="Enter IFSC code" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Account Number</label>
-                <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} required placeholder="Enter account number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} required placeholder="Enter account number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Account Holder Name</label>
-                <input type="text" name="accountHolderName" value={formData.accountHolderName} onChange={handleChange} required placeholder="Enter account holder name" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="accountHolderName" value={formData.accountHolderName} onChange={handleChange} required placeholder="Enter account holder name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
             </div>
-            <div className="flex justify-between mt-4">
-              <button type="button" onClick={() => changeSection('personal')} className="px-6 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Back</button>
-              <button type="button" onClick={() => changeSection('license')} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-800 transition">Next</button>
+            <div className="flex justify-center gap-4 mt-6">
+              <button type="button" onClick={() => changeSection('personal')} className="px-8 py-3 bg-sky-400 text-black rounded-lg hover:bg-black hover:text-white font-semibold text-lg transition">Back</button>
+              <button type="button" onClick={() => changeSection('license')} className="px-8 py-3 bg-black text-white rounded-lg hover:bg-sky-400 hover:text-black font-semibold text-lg transition">Next</button>
             </div>
           </div>
           {/* License and Certificates Section */}
           <div className={activeSection === 'license' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">License and Certificates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Driving License Number</label>
-                <input type="text" name="drivingLicenseNo" value={formData.drivingLicenseNo} onChange={handleChange} required placeholder="Enter driving license number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="drivingLicenseNo" value={formData.drivingLicenseNo} onChange={handleChange} required placeholder="Enter driving license number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Driving License Photo</label>
-                <input type="file" name="drivingLicensePhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Driving License Photo"
+                name="drivingLicensePhoto"
+                file={files.drivingLicensePhoto}
+                onChange={handleFileChange}
+                required
+              />
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Permit Number</label>
-                <input type="text" name="permitNo" value={formData.permitNo} onChange={handleChange} required placeholder="Enter permit number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="permitNo" value={formData.permitNo} onChange={handleChange} required placeholder="Enter permit number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Permit Photo</label>
-                <input type="file" name="permitPhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Permit Photo"
+                name="permitPhoto"
+                file={files.permitPhoto}
+                onChange={handleFileChange}
+                required
+              />
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Fitness Certificate Number</label>
-                <input type="text" name="fitnessCertificateNo" value={formData.fitnessCertificateNo} onChange={handleChange} required placeholder="Enter fitness certificate number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="fitnessCertificateNo" value={formData.fitnessCertificateNo} onChange={handleChange} required placeholder="Enter fitness certificate number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Fitness Certificate Photo</label>
-                <input type="file" name="fitnessCertificatePhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Fitness Certificate Photo"
+                name="fitnessCertificatePhoto"
+                file={files.fitnessCertificatePhoto}
+                onChange={handleFileChange}
+                required
+              />
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Insurance Policy Number</label>
-                <input type="text" name="insurancePolicyNo" value={formData.insurancePolicyNo} onChange={handleChange} required placeholder="Enter insurance policy number" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="text" name="insurancePolicyNo" value={formData.insurancePolicyNo} onChange={handleChange} required placeholder="Enter insurance policy number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">Insurance Policy Photo</label>
-                <input type="file" name="insurancePolicyPhoto" onChange={handleFileChange} required className="w-full" />
-              </div>
+              <ModernUpload
+                label="Insurance Policy Photo"
+                name="insurancePolicyPhoto"
+                file={files.insurancePolicyPhoto}
+                onChange={handleFileChange}
+                required
+              />
             </div>
-            <div className="flex justify-between mt-4">
-              <button type="button" onClick={() => changeSection('bank')} className="px-6 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Back</button>
-              <button type="button" onClick={() => changeSection('security')} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-800 transition">Next</button>
+            <div className="flex justify-center gap-4 mt-6">
+              <button type="button" onClick={() => changeSection('bank')} className="px-8 py-3 bg-sky-400 text-black rounded-lg hover:bg-black hover:text-white font-semibold text-lg transition">Back</button>
+              <button type="button" onClick={() => changeSection('security')} className="px-8 py-3 bg-black text-white rounded-lg hover:bg-sky-400 hover:text-black font-semibold text-lg transition">Next</button>
             </div>
           </div>
           {/* Security Section */}
           <div className={activeSection === 'security' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">Security</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative">
                 <label className="block text-gray-700 font-medium mb-1">Password</label>
-                <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Create a password (min. 6 characters)" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Create a password (min. 6 characters)" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg pr-10" />
+                {/* Password show/hide and strength meter can be added here */}
               </div>
-              <div>
+              <div className="relative">
                 <label className="block text-gray-700 font-medium mb-1">Confirm Password</label>
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required minLength="6" placeholder="Confirm your password" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required minLength="6" placeholder="Confirm your password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg pr-10" />
               </div>
             </div>
-            <div className="flex justify-between mt-4">
-              <button type="button" onClick={() => changeSection('license')} className="px-6 py-2 border border-blue-600 text-blue-600 rounded hover:bg-blue-50">Back</button>
-              <button type="submit" disabled={loading} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-800 transition disabled:bg-gray-400">
+            <div className="flex justify-center gap-4 mt-6">
+              <button type="button" onClick={() => changeSection('license')} className="px-8 py-3 bg-sky-400 text-black rounded-lg hover:bg-black hover:text-white font-semibold text-lg transition">Back</button>
+              <button type="submit" disabled={loading} className="px-8 py-3 bg-black text-white rounded-lg hover:bg-sky-400 hover:text-black font-semibold text-lg transition disabled:bg-gray-400">
                 {loading ? 'Signing up...' : 'Sign Up'}
               </button>
             </div>

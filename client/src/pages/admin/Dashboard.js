@@ -1,8 +1,15 @@
 // client/src/pages/BoothAdmin.js
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const BoothAdmin = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 py-8">
       <div className="w-full max-w-xl bg-white rounded-lg shadow-lg p-8 mb-4">
