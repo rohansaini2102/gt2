@@ -8,7 +8,8 @@ const {
   getAllDrivers, 
   getDriverById,
   getAllUsers,
-  getUserById 
+  getUserById,
+  verifyDriver
 } = require('../controllers/adminController');
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
@@ -21,6 +22,9 @@ router.post('/drivers', adminProtect, driverFileUpload, registerDriver);
 // Admin routes for user management
 router.get('/users', adminProtect, getAllUsers);
 router.get('/users/:id', adminProtect, getUserById);
+
+// Approve/reject driver
+router.put('/drivers/:id/verify', adminProtect, verifyDriver);
 
 // Admin login route
 router.post('/login', async (req, res) => {

@@ -72,8 +72,10 @@ exports.registerDriver = async (req, res) => {
     const filePaths = {};
     Object.keys(req.files).forEach(fieldName => {
       if (req.files[fieldName] && req.files[fieldName][0]) {
-        // Store relative path
-        filePaths[fieldName] = req.files[fieldName][0].path;
+        // Store relative path (uploads/...) for web access
+        const absolutePath = req.files[fieldName][0].path;
+        const relativePath = path.relative(path.join(__dirname, '..'), absolutePath).replace(/\\/g, '/');
+        filePaths[fieldName] = relativePath;
         console.log(`[Driver Registration] File path for ${fieldName}:`, filePaths[fieldName]);
       }
     });
@@ -150,7 +152,8 @@ exports.registerDriver = async (req, res) => {
       fitnessCertificatePhoto: filePaths.fitnessCertificatePhoto,
       insurancePolicyNo: req.body.insurancePolicyNo,
       insurancePolicyPhoto: filePaths.insurancePolicyPhoto,
-      password: hashedPassword
+      password: hashedPassword,
+      isVerified: (req.user && req.user.role === 'admin') ? true : false
     };
 
     // Create and save new driver

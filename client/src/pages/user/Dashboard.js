@@ -1117,36 +1117,8 @@ const UserDashboard = () => {
       {/* Sidebar */}
       <div className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
         <div className="profile-section">
-          <div className="profile-photo-container" onClick={handleProfilePhotoClick}>
-            {user.profileImage ? (
-              <img
-                src={imageUrl || `http://localhost:5000/${user.profileImage}`}
-                alt="Profile"
-                className="profile-photo"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-                }}
-              />
-            ) : (
-              <div className="profile-placeholder">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="profile-photo-overlay">
-              <span>Click to change photo</span>
-            </div>
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="image/jpeg,image/png,image/gif"
-            style={{ display: 'none' }}
-          />
-          <h3>{user.name}</h3>
+          <h3 className="text-lg font-bold text-blue-700 mb-2">{user.name}</h3>
         </div>
-
         <nav className="dashboard-nav">
           <button 
             className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}

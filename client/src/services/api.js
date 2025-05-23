@@ -115,18 +115,22 @@ export const auth = {
 // Driver APIs
 export const drivers = {
   // Driver registration (with file uploads)
-  driverSignup: async (formData) => {
+  driverSignup: async (formData, options = {}) => {
     try {
       console.log('Sending driver registration data');
-      const response = await fileClient.post('/drivers/register', formData);
-      
+      let response;
+      if (options.isAdmin) {
+        // Use admin endpoint for immediate approval
+        response = await fileClient.post('/admin/drivers', formData);
+      } else {
+        response = await fileClient.post('/drivers/register', formData);
+      }
       // Store token if provided in response
       if (response.data.token) {
         localStorage.setItem('driverToken', response.data.token);
         localStorage.setItem('driverRole', 'driver');
         localStorage.setItem('driver', JSON.stringify(response.data.driver));
       }
-      
       return response.data;
     } catch (error) {
       console.error('Driver signup error:', error);
@@ -179,6 +183,26 @@ export const admin = {
   getDriverById: async (id) => {
     try {
       const response = await apiClient.get(`/admin/drivers/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Approve or reject driver
+  verifyDriver: async (id, isVerified) => {
+    try {
+      const response = await apiClient.put(`/admin/drivers/${id}/verify`, { isVerified });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Delete driver
+  deleteDriver: async (id) => {
+    try {
+      const response = await apiClient.delete(`/admin/drivers/${id}`);
       return response.data;
     } catch (error) {
       throw error;

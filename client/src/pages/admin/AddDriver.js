@@ -1,6 +1,5 @@
-// client/src/pages/DriverSignup.js
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { driverSignup } from '../../services/api';
 import ModernUpload from '../../components/common/ModernUpload';
 import { FiUser, FiCreditCard, FiClipboard, FiLock } from 'react-icons/fi';
@@ -12,19 +11,17 @@ const steps = [
   { key: 'security', label: 'Security', icon: <FiLock /> },
 ];
 
-const DriverSignup = () => {
+const AddDriver = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     mobileNo: '',
     aadhaarNo: '',
     vehicleNo: '',
-    // Bank Details
     bankName: '',
     ifscCode: '',
     accountNumber: '',
     accountHolderName: '',
-    // License and Certificates
     drivingLicenseNo: '',
     permitNo: '',
     fitnessCertificateNo: '',
@@ -32,7 +29,6 @@ const DriverSignup = () => {
     password: '',
     confirmPassword: ''
   });
-  
   const [files, setFiles] = useState({
     aadhaarPhoto: null,
     registrationCertificatePhoto: null,
@@ -41,10 +37,17 @@ const DriverSignup = () => {
     fitnessCertificatePhoto: null,
     insurancePolicyPhoto: null
   });
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
   const [activeSection, setActiveSection] = useState('personal');
+
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -62,6 +65,7 @@ const DriverSignup = () => {
     }
     setLoading(true);
     setError(null);
+    setSuccess('');
     try {
       const submitData = new FormData();
       submitData.append('fullName', formData.fullName);
@@ -85,12 +89,13 @@ const DriverSignup = () => {
           submitData.append(key, files[key]);
         }
       });
-      await driverSignup(submitData);
+      // Call the API (should be an admin endpoint for immediate approval)
+      await driverSignup(submitData, { isAdmin: true });
       setLoading(false);
-      alert('Registration successful! Your account is pending admin approval.');
-      navigate('/driver/login');
+      setSuccess('Driver registration successful! Driver is now active.');
+      setTimeout(() => navigate('/admin/drivers'), 1500);
     } catch (err) {
-      setError(err.error || 'Failed to register');
+      setError(err.error || 'Failed to register driver');
       setLoading(false);
     }
   };
@@ -100,14 +105,11 @@ const DriverSignup = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 py-8">
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-lg p-8 mb-4">
+    <div className="flex flex-col flex-1 w-full h-full bg-gray-100 p-0">
+      <div className="w-full h-full px-12 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-700 mb-2">Welcome to GANTAVYAM</h1>
-          <h2 className="text-xl font-semibold text-orange-500">Driver Signup</h2>
-          <p className="mt-2 text-blue-600 font-semibold">
-            <Link to="/driver/login" className="hover:underline">Already registered? Login</Link>
-          </p>
+          <h1 className="text-3xl font-bold text-blue-700 mb-2 text-left">Admin: Register New Driver</h1>
+          <h2 className="text-xl font-semibold text-orange-500 text-left">Driver Registration</h2>
         </div>
         {/* Stepper */}
         <div className="flex justify-between items-center mb-8">
@@ -120,22 +122,23 @@ const DriverSignup = () => {
           ))}
         </div>
         {error && <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 border-l-4 border-red-500 text-sm">{error}</div>}
+        {success && <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4 border-l-4 border-green-500 text-sm">{success}</div>}
         <form onSubmit={handleSubmit} className="mt-4">
           {/* Personal Information Section */}
           <div className={activeSection === 'personal' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Full Name</label>
-                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="Enter your full name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
+                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required placeholder="Enter full name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Mobile Number</label>
-                <input type="text" name="mobileNo" value={formData.mobileNo} onChange={handleChange} required placeholder="Enter your mobile number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
+                <input type="text" name="mobileNo" value={formData.mobileNo} onChange={handleChange} required placeholder="Enter mobile number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Aadhaar Number</label>
-                <input type="text" name="aadhaarNo" value={formData.aadhaarNo} onChange={handleChange} required placeholder="Enter your 12-digit Aadhaar number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
+                <input type="text" name="aadhaarNo" value={formData.aadhaarNo} onChange={handleChange} required placeholder="Enter 12-digit Aadhaar number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <ModernUpload
                 label="Aadhaar Photo"
@@ -146,7 +149,7 @@ const DriverSignup = () => {
               />
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Vehicle Number</label>
-                <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} required placeholder="Enter your vehicle number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
+                <input type="text" name="vehicleNo" value={formData.vehicleNo} onChange={handleChange} required placeholder="Enter vehicle number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <ModernUpload
                 label="Registration Certificate Photo"
@@ -163,10 +166,10 @@ const DriverSignup = () => {
           {/* Bank Details Section */}
           <div className={activeSection === 'bank' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">Bank Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Bank Name</label>
-                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required placeholder="Enter your bank name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
+                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required placeholder="Enter bank name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-1">IFSC Code</label>
@@ -189,7 +192,8 @@ const DriverSignup = () => {
           {/* License and Certificates Section */}
           <div className={activeSection === 'license' ? '' : 'hidden'}>
             <h3 className="text-lg font-semibold text-blue-700 mb-4">License and Certificates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Driving License */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Driving License Number</label>
                 <input type="text" name="drivingLicenseNo" value={formData.drivingLicenseNo} onChange={handleChange} required placeholder="Enter driving license number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
@@ -201,6 +205,7 @@ const DriverSignup = () => {
                 onChange={handleFileChange}
                 required
               />
+              {/* Permit */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Permit Number</label>
                 <input type="text" name="permitNo" value={formData.permitNo} onChange={handleChange} required placeholder="Enter permit number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
@@ -212,6 +217,7 @@ const DriverSignup = () => {
                 onChange={handleFileChange}
                 required
               />
+              {/* Fitness Certificate */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Fitness Certificate Number</label>
                 <input type="text" name="fitnessCertificateNo" value={formData.fitnessCertificateNo} onChange={handleChange} required placeholder="Enter fitness certificate number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
@@ -223,6 +229,7 @@ const DriverSignup = () => {
                 onChange={handleFileChange}
                 required
               />
+              {/* Insurance Policy */}
               <div>
                 <label className="block text-gray-700 font-medium mb-1">Insurance Policy Number</label>
                 <input type="text" name="insurancePolicyNo" value={formData.insurancePolicyNo} onChange={handleChange} required placeholder="Enter insurance policy number" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg" />
@@ -247,25 +254,24 @@ const DriverSignup = () => {
               <div className="relative">
                 <label className="block text-gray-700 font-medium mb-1">Password</label>
                 <input type="password" name="password" value={formData.password} onChange={handleChange} required minLength="6" placeholder="Create a password (min. 6 characters)" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg pr-10" />
-                {/* Password show/hide and strength meter can be added here */}
               </div>
               <div className="relative">
                 <label className="block text-gray-700 font-medium mb-1">Confirm Password</label>
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required minLength="6" placeholder="Confirm your password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg pr-10" />
+                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required minLength="6" placeholder="Confirm password" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 text-lg pr-10" />
               </div>
             </div>
             <div className="flex justify-center gap-4 mt-6">
               <button type="button" onClick={() => changeSection('license')} className="px-8 py-3 bg-sky-400 text-black rounded-lg hover:bg-black hover:text-white font-semibold text-lg transition">Back</button>
               <button type="submit" disabled={loading} className="px-8 py-3 bg-black text-white rounded-lg hover:bg-sky-400 hover:text-black font-semibold text-lg transition disabled:bg-gray-400">
-                {loading ? 'Signing up...' : 'Sign Up'}
+                {loading ? 'Registering...' : 'Register Driver'}
               </button>
             </div>
           </div>
         </form>
       </div>
-      <div className="text-center text-gray-500 text-xs mt-2">&copy; 2025 GANTAVYAM. All rights reserved.</div>
+      <div className="text-left text-gray-500 text-xs mt-2">&copy; 2025 GANTAVYAM. All rights reserved.</div>
     </div>
   );
 };
 
-export default DriverSignup;
+export default AddDriver; 
