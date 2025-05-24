@@ -34,7 +34,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'https://gantavyam4.onrender.com', // Replace with your deployed frontend domain if needed
-  'https://gt2-3.onrender.com' // If you want to allow direct API testing from deployed backend
+  'https://gt2-2.onrender.com' // If you want to allow direct API testing from deployed backend
 ];
 app.use(cors({
   origin: allowedOrigins,
