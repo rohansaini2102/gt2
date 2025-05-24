@@ -310,6 +310,15 @@ exports.loginDriver = async (req, res) => {
       });
     }
     
+    // Check if driver is verified
+    if (!driver.isVerified) {
+      console.error(`[Driver Login] Driver ${driver._id} is not verified`);
+      return res.status(403).json({
+        success: false,
+        error: 'Your profile is not verified yet. Please wait for admin approval.'
+      });
+    }
+    
     console.log(`[Driver Login] Password match successful for driver ${driver._id}`);
 
     // Create token

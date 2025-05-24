@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaCar, FaGoogle, FaApple } from 'react-icons/fa';
+import { auth } from '../../services/api';
 
 const DriverLogin = () => {
   const navigate = useNavigate();
@@ -21,18 +22,30 @@ const DriverLogin = () => {
     setStep(2);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setTimeout(() => {
+    if (!password) {
       setLoading(false);
-      if (!password) {
-        setError('Please enter your password.');
-      } else {
+      setError('Please enter your password.');
+      return;
+    }
+    try {
+      // Call backend login API
+      const res = await auth.driverLogin({ mobileNo: input, password });
+      setLoading(false);
+      if (res.driver && res.driver.isVerified === false) {
+        navigate('/driver/pending');
+      } else if (res.driver && res.driver.isVerified === true) {
         navigate('/driver/dashboard');
+      } else {
+        setError('Unexpected response from server.');
       }
-    }, 800);
+    } catch (err) {
+      setLoading(false);
+      setError(err.error || 'Login failed.');
+    }
   };
 
   return (
