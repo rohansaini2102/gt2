@@ -1,7 +1,16 @@
 // client/src/pages/BoothAdmin.js
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      navigate('/admin/login');
+    }
+  }, [navigate]);
+
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <div className="text-2xl md:text-3xl font-bold text-blue-700 mb-6">Welcome to the Admin Dashboard</div>

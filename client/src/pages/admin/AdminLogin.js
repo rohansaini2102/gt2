@@ -4,8 +4,8 @@ import axios from 'axios';
 import { API_URL } from '../../config';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('admin@admin.com');
-  const [password, setPassword] = useState('admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 

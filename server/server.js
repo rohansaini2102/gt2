@@ -34,6 +34,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'https://gt2-seven.vercel.app',
+  'https://gantavyam.site',
+  'https://www.gantavyam.site',
   'https://gt2-evx6vat1j-rohan-sainis-projects.vercel.app', // Replace with your deployed frontend domain if needed
   'https://gt2-2.onrender.com' // If you want to allow direct API testing from deployed backend
 ];

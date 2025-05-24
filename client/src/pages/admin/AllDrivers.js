@@ -22,6 +22,13 @@ const AllDrivers = () => {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      window.location.href = '/admin/login';
+    }
+  }, []);
+
+  useEffect(() => {
     fetchDrivers();
   }, []);
 
