@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { admin as adminAPI } from '../../services/api';
 import { FiCheckCircle, FiXCircle, FiUser, FiEye, FiTrash2, FiClock } from 'react-icons/fi';
+import { SOCKET_URL } from '../../config';
 
-const backendBaseUrl = "http://localhost:5000"; // Change to your backend URL if needed
+const backendBaseUrl = SOCKET_URL; // Use SOCKET_URL for image/document URLs
 
 const statusColors = {
   approved: 'text-green-600',

@@ -1,11 +1,12 @@
 // client/src/services/socket.js
 import { io } from 'socket.io-client';
+import { SOCKET_URL } from '../config';
 
 class SocketService {
   constructor() {
     this.socket = null;
     this.connected = false;
-    this.serverUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    this.serverUrl = SOCKET_URL;
     this.reconnectionAttempts = 5;
     this.reconnectionDelay = 1000;
     this.initializePromise = null; // Track initialization

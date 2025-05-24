@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../../config';
 
 const ViewUserDetails = () => {
   const { id } = useParams();
@@ -17,7 +18,7 @@ const ViewUserDetails = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       const token = localStorage.getItem('adminToken');
-      const res = await axios.get(`http://localhost:5000/api/admin/users/${id}`, {
+      const res = await axios.get(`${API_URL}/admin/users/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

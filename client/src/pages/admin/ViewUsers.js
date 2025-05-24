@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiEye } from 'react-icons/fi';
+import { API_URL } from '../../config';
 
 const ViewUsers = () => {
   const [users, setUsers] = useState([]);
@@ -20,7 +21,7 @@ const ViewUsers = () => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem('adminToken');
-        const res = await axios.get('http://localhost:5000/api/admin/users', {
+        const res = await axios.get(`${API_URL}/admin/users`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

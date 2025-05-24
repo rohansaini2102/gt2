@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../../services/api';
 
 const UserLogin = () => {
   const [formData, setFormData] = useState({ phone: '', password: '' });
@@ -19,19 +19,19 @@ const UserLogin = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/users/login', formData);
+      const response = await auth.userLogin(formData);
       
-      if (response.data.success) {
+      if (response.success) {
         // Save token
-        localStorage.setItem('userToken', response.data.token);
+        localStorage.setItem('userToken', response.token);
         
         // Save user data - corrected line
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(response.user));
         
         // Redirect to dashboard
         navigate('/user/dashboard');
       } else {
-        setError(response.data.message || 'Login failed. Please try again.');
+        setError(response.message || 'Login failed. Please try again.');
       }
     } catch (err) {
       setIsLoading(false);

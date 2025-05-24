@@ -31,7 +31,15 @@ if (!fs.existsSync(uploadsDir)) {
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://your-frontend-domain.com', // Replace with your deployed frontend domain if needed
+  'https://gt2-3.onrender.com' // If you want to allow direct API testing from deployed backend
+];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

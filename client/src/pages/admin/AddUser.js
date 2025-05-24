@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../../config';
 
 const AddUser = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
@@ -21,7 +22,7 @@ const AddUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/users/register', formData);
+      await axios.post(`${API_URL}/users/register`, formData);
       setMessage('User registration successful!');
     } catch (err) {
       setMessage('Failed to register user');

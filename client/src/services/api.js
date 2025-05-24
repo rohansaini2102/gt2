@@ -1,8 +1,6 @@
 // client/src/services/api.js
 import axios from 'axios';
-
-// API base URL
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 // Create axios instance for JSON requests
 const apiClient = axios.create({

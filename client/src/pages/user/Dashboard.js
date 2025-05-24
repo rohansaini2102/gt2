@@ -6,6 +6,7 @@ import axios from 'axios';
 import moment from 'moment';
 import { debounce } from 'lodash';
 import { initializeSocket, disconnectSocket, subscribeToDriverUpdates, unsubscribeFromDriverUpdates } from '../../services/socket';
+import { API_URL } from '../../config';
 
 // API key for Google Maps
 const GOOGLE_MAPS_API_KEY = "AIzaSyDFbjmVJoi2wDzwJNR2rrowpSEtSes1jw4";
@@ -336,7 +337,7 @@ const UserDashboard = () => {
 
       const token = localStorage.getItem('userToken');
       const response = await axios.post(
-        'http://localhost:5000/api/users/profile-image',
+        `${API_URL}/users/profile-image`,
         formData,
         {
           headers: {
@@ -490,7 +491,7 @@ const UserDashboard = () => {
     try {
       setIsLoadingRides(true);
       const token = localStorage.getItem('userToken');
-      const response = await axios.get('http://localhost:5000/api/ride-history/user-rides', {
+      const response = await axios.get(`${API_URL}/ride-history/user-rides`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -552,7 +553,7 @@ const UserDashboard = () => {
       setIsCancelling(true);
       const token = localStorage.getItem('userToken');
       const response = await axios.post(
-        'http://localhost:5000/api/rides/cancel',
+        `${API_URL}/rides/cancel`,
         { rideId },
         {
           headers: {

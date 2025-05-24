@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { API_URL } from '../../config';
 
 // Fix for default marker icon in leaflet
 let DefaultIcon = L.icon({
@@ -28,7 +29,7 @@ const DriverProfile = () => {
         const token = localStorage.getItem('token');
         const driverId = JSON.parse(localStorage.getItem('driver')).id;
 
-        const res = await axios.get(`http://localhost:5000/api/drivers/profile/${driverId}`, {
+        const res = await axios.get(`${API_URL}/drivers/profile/${driverId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -60,7 +61,7 @@ const DriverProfile = () => {
             const token = localStorage.getItem('token');
             const driverId = JSON.parse(localStorage.getItem('driver')).id;
             await axios.put(
-              `http://localhost:5000/api/drivers/${driverId}/location`,
+              `${API_URL}/drivers/${driverId}/location`,
               newLocation,
               {
                 headers: { Authorization: `Bearer ${token}` }
@@ -84,7 +85,7 @@ const DriverProfile = () => {
       const driverId = JSON.parse(localStorage.getItem('driver')).id;
       
       await axios.put(
-        `http://localhost:5000/api/drivers/${driverId}/preferences`,
+        `${API_URL}/drivers/${driverId}/preferences`,
         { darkMode: !darkMode },
         {
           headers: { Authorization: `Bearer ${token}` }
